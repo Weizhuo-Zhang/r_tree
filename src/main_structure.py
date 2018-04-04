@@ -10,8 +10,15 @@ class Point:
         self.x = x
         self.y = y
 
+class Rectangle:
+    def __init__(self, left, right, bottom, top):
+        self.left = left
+        self.right = right
+        self.bottom = bottom
+        self.top = top
+
 class Node:
-    max_num = 6
+    max_num = 12
     min_num = int(math.ceil(0.4 * max_num))
     def __init__(self):
         self.is_leaf = False
@@ -72,7 +79,8 @@ class Node:
             s2_y = Node()
             min_peri_x = sys.maxint
             min_peri_y = sys.maxint
-            for i in range(self.min_num, node_num - self.min_num):
+            max_range = node_num - self.min_num
+            for i in range(self.min_num, max_range):
                 temp_s1_x = Node()
                 temp_s2_x = Node()
                 temp_s1_y = Node()
@@ -137,7 +145,8 @@ class Node:
             s1 = Node()
             s2 = Node()
             min_peri = sys.maxint
-            for i in range(self.min_num, node_num - self.min_num):
+            max_range = node_num - self.min_num
+            for i in range(self.min_num, max_range):
                 s1_x_left = Node()
                 s1_x_right = Node()
                 s1_y_bottom = Node()
@@ -268,6 +277,37 @@ class Node:
             subtree = self.choose_subtree(point)
             subtree.insert(point)
 
+    def intersect(self, rectangle):
+        minx = max(self.left, rectangle.left)
+        maxx = min(self.right, rectangle.right)
+        miny = max(self.bottom, rectangle.bottom)
+        maxy = min(self.top, self.top)
+        if (minx > maxx) or (miny > maxy):
+            return False
+        else:
+            return True
+
+    def answer_query(self, rectangle):
+        count = 0
+        if self.is_leaf:
+            if (self.left >= rectangle.left) and \
+                    (self.right <= rectangle.right) and \
+                    (self.bottom >= rectangle.bottom) and \
+                    (self.top <= rectangle.top):
+                count = len(self.successor)
+            else:
+                for point in self.successor:
+                    if (point.x >= rectangle.left) and \
+                            (point.x <= rectangle.right) and \
+                            (point.y >= rectangle.bottom) and \
+                            (point.y <= rectangle.top):
+                        count += 1
+        else:
+            for node in self.successor:
+                if node.intersect(rectangle):
+                    count += node.answer_query(rectangle)
+        return count
+
 data_file = open('../data/dataset.txt')
 data = data_file.readlines()
 data_file.close()
@@ -285,3 +325,25 @@ for line in data[1:]:
 
 end = int(round(time.time() * 1000))
 print 'Build the tree: {0}ms'.format(end - start)
+
+query_file = open('../data/test_query.txt')
+query = query_file.readlines()
+query_file.close()
+
+result = ''
+
+start = int(round(time.time() * 1000))
+for line in query:
+    line = line.split()
+    line = map(eval, line)
+    rectangle = Rectangle(line[0], line[1], line[2], line[3])
+    result += '{0}\n'.format(root.answer_query(rectangle))
+
+end = int(round(time.time() * 1000))
+print 'Answer the query total: {0}ms'.format(end - start)
+print 'Answer the query average: {0}ms'.format((end - start) * 1.0 / len(query))
+
+print result
+result_file = open('result.txt', 'w')
+result_file.write(result)
+result_file.close()
