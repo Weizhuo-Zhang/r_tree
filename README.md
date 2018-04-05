@@ -6,4 +6,5 @@ B   build_time
 5   14914m result mistakes
 6   11700ms result mistake
 
-result mistake 5(7) 6(8) 8(7) 9(5)
+result mistake 5(7) *6(8) 8(7) 9(5)
+7(7

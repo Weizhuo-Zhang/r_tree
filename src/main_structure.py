@@ -1,4 +1,3 @@
-import copy
 import math
 import sys
 import time
@@ -18,7 +17,7 @@ class Rectangle:
         self.top = top
 
 class Node:
-    max_num = 12
+    max_num = 9
     min_num = int(math.ceil(0.4 * max_num))
     def __init__(self):
         self.is_leaf = False
@@ -35,6 +34,12 @@ class Node:
     def is_underflow(self):
         return len(self.successor) < self.min_num
 
+    def reset_position(self):
+        self.left = sys.maxint
+        self.right = -sys.maxint
+        self.top = -sys.maxint
+        self.bottom = sys.maxint
+
     def compute_perimeter(self):
         return self.top + self.right - self.left - self.bottom
 
@@ -44,6 +49,9 @@ class Node:
         self.right = node.right
         self.bottom = node.bottom
         self.top = node.top
+        if not self.is_leaf:
+            for child in node.successor:
+                child.predecessor = self
 
     def update_with_point(self, point):
          self.left = min(self.left, point.x)
@@ -57,7 +65,7 @@ class Node:
         self.bottom = min(self.bottom, node.bottom)
         self.top = max(self.top, node.top)
 
-    def split(self):
+    def split_node(self):
         node_num = len(self.successor)
         new_node = Node()
         if self.is_leaf:
@@ -73,55 +81,95 @@ class Node:
                 x_q.append(x_q_global.get()[1])
                 y_q.append(y_q_global.get()[1])
 
-            s1_x = Node()
-            s2_x = Node()
-            s1_y = Node()
-            s2_y = Node()
-            min_peri_x = sys.maxint
-            min_peri_y = sys.maxint
-            max_range = node_num - self.min_num
-            for i in range(self.min_num, max_range):
+            s1 = Node()
+            s2 = Node()
+            min_peri = sys.maxint
+            for i in range(self.min_num, node_num - self.min_num):
                 temp_s1_x = Node()
-                temp_s2_x = Node()
                 temp_s1_y = Node()
-                temp_s2_y = Node()
                 for count in range(0, i):
-                    temp_item_x = x_q[count]
-                    temp_item_y = y_q[count]
-                    temp_s1_x.update_with_point(temp_item_x)
-                    temp_s1_y.update_with_point(temp_item_y)
-                    temp_s1_x.successor.append(temp_item_x)
-                    temp_s1_y.successor.append(temp_item_y)
+                    temp_s1_x.update_with_point(x_q[count])
+                    temp_s1_y.update_with_point(y_q[count])
+                    temp_s1_x.successor.append(x_q[count])
+                    temp_s1_y.successor.append(y_q[count])
+                temp_s2_x = Node()
+                temp_s2_y = Node()
                 for count in range(i, node_num):
-                    temp_item_x = x_q[count]
-                    temp_item_y = y_q[count]
-                    temp_s2_x.update_with_point(temp_item_x)
-                    temp_s2_y.update_with_point(temp_item_y)
-                    temp_s2_x.successor.append(temp_item_x)
-                    temp_s2_y.successor.append(temp_item_y)
-
+                    temp_s2_x.update_with_point(x_q[count])
+                    temp_s2_y.update_with_point(y_q[count])
+                    temp_s2_x.successor.append(x_q[count])
+                    temp_s2_y.successor.append(y_q[count])
                 peri_x = temp_s1_x.compute_perimeter() + \
                          temp_s2_x.compute_perimeter()
+
                 peri_y = temp_s1_y.compute_perimeter() + \
                          temp_s2_y.compute_perimeter()
 
-                if peri_x < min_peri_x:
-                    min_peri_x = peri_x
-                    s1_x = temp_s1_x
-                    s2_x = temp_s2_x
-                if peri_y < min_peri_y:
-                    min_peri_y = peri_y
-                    s1_y = temp_s1_y
-                    s2_y = temp_s2_y
+                if (peri_x < min_peri) and (peri_x <= peri_y):
+                    min_peri = peri_x
+                    s1 = temp_s1_x
+                    s2 = temp_s2_x
+                    continue
+
+                if (peri_y < min_peri) and (peri_y <= peri_x):
+                    min_peri = peri_y
+                    s1 = temp_s1_y
+                    s2 = temp_s2_y
+                    continue
 
             new_node.is_leaf = True
-            new_node.predecessor = self.predecessor
-            if min_peri_x < min_peri_y:
-                self.copy_node(s1_x)
-                new_node.copy_node(s2_x)
-            else:
-                self.copy_node(s1_y)
-                new_node.copy_node(s2_y)
+            self.copy_node(s1)
+            new_node.copy_node(s2)
+
+#            s1_x = Node()
+#            s2_x = Node()
+#            s1_y = Node()
+#            s2_y = Node()
+#            min_peri_x = sys.maxint
+#            min_peri_y = sys.maxint
+#            max_range = node_num - self.min_num
+#            for i in range(self.min_num, max_range):
+#                temp_s1_x = Node()
+#                temp_s2_x = Node()
+#                temp_s1_y = Node()
+#                temp_s2_y = Node()
+#                for count in range(0, i):
+#                    temp_item_x = x_q[count]
+#                    temp_item_y = y_q[count]
+#                    temp_s1_x.update_with_point(temp_item_x)
+#                    temp_s1_y.update_with_point(temp_item_y)
+#                    temp_s1_x.successor.append(temp_item_x)
+#                    temp_s1_y.successor.append(temp_item_y)
+#                for count in range(i, node_num):
+#                    temp_item_x = x_q[count]
+#                    temp_item_y = y_q[count]
+#                    temp_s2_x.update_with_point(temp_item_x)
+#                    temp_s2_y.update_with_point(temp_item_y)
+#                    temp_s2_x.successor.append(temp_item_x)
+#                    temp_s2_y.successor.append(temp_item_y)
+#
+#                peri_x = temp_s1_x.compute_perimeter() + \
+#                         temp_s2_x.compute_perimeter()
+#                peri_y = temp_s1_y.compute_perimeter() + \
+#                         temp_s2_y.compute_perimeter()
+#
+#                if peri_x < min_peri_x:
+#                    min_peri_x = peri_x
+#                    s1_x = temp_s1_x
+#                    s2_x = temp_s2_x
+#                if peri_y < min_peri_y:
+#                    min_peri_y = peri_y
+#                    s1_y = temp_s1_y
+#                    s2_y = temp_s2_y
+#
+#            new_node.is_leaf = True
+#            new_node.predecessor = self.predecessor
+#            if min_peri_x < min_peri_y:
+#                self.copy_node(s1_x)
+#                new_node.copy_node(s2_x)
+#            else:
+#                self.copy_node(s1_y)
+#                new_node.copy_node(s2_y)
         else:
             x_left_q_g = PriorityQueue()
             x_right_q_g = PriorityQueue()
@@ -145,42 +193,33 @@ class Node:
             s1 = Node()
             s2 = Node()
             min_peri = sys.maxint
-            max_range = node_num - self.min_num
-            for i in range(self.min_num, max_range):
+            for i in range(self.min_num, node_num - self.min_num):
                 s1_x_left = Node()
                 s1_x_right = Node()
                 s1_y_bottom = Node()
                 s1_y_top = Node()
                 for count in range(0, i):
-                    x_left = x_left_q[count]
-                    x_right = x_right_q[count]
-                    y_bottom = y_bottom_q[count]
-                    y_top = y_top_q[count]
-                    s1_x_left.update_with_node(x_left)
-                    s1_x_right.update_with_node(x_right)
-                    s1_y_bottom.update_with_node(y_bottom)
-                    s1_y_top.update_with_node(y_top)
-                    s1_x_left.successor.append(x_left)
-                    s1_x_right.successor.append(x_right)
-                    s1_y_bottom.successor.append(y_bottom)
-                    s1_y_top.successor.append(y_top)
+                    s1_x_left.update_with_node(x_left_q[count])
+                    s1_x_right.update_with_node(x_right_q[count])
+                    s1_y_bottom.update_with_node(y_bottom_q[count])
+                    s1_y_top.update_with_node(y_top_q[count])
+                    s1_x_left.successor.append(x_left_q[count])
+                    s1_x_right.successor.append(x_right_q[count])
+                    s1_y_bottom.successor.append(y_bottom_q[count])
+                    s1_y_top.successor.append(y_top_q[count])
                 s2_x_left = Node()
                 s2_x_right = Node()
                 s2_y_bottom = Node()
                 s2_y_top = Node()
                 for count in range(i, node_num):
-                    x_left = x_left_q[count]
-                    x_right = x_right_q[count]
-                    y_bottom = y_bottom_q[count]
-                    y_top = y_top_q[count]
-                    s2_x_left.update_with_node(x_left)
-                    s2_x_right.update_with_node(x_right)
-                    s2_y_bottom.update_with_node(y_bottom)
-                    s2_y_top.update_with_node(y_top)
-                    s2_x_left.successor.append(x_left)
-                    s2_x_right.successor.append(x_right)
-                    s2_y_bottom.successor.append(y_bottom)
-                    s2_y_top.successor.append(y_top)
+                    s2_x_left.update_with_node(x_left_q[count])
+                    s2_x_right.update_with_node(x_right_q[count])
+                    s2_y_bottom.update_with_node(y_bottom_q[count])
+                    s2_y_top.update_with_node(y_top_q[count])
+                    s2_x_left.successor.append(x_left_q[count])
+                    s2_x_right.successor.append(x_right_q[count])
+                    s2_y_bottom.successor.append(y_bottom_q[count])
+                    s2_y_top.successor.append(y_top_q[count])
                 peri_x_left = s1_x_left.compute_perimeter() + \
                               s2_x_left.compute_perimeter()
                 peri_x_right = s1_x_right.compute_perimeter() + \
@@ -197,6 +236,7 @@ class Node:
                     min_peri = peri_x_left
                     s1 = s1_x_left
                     s2 = s2_x_left
+                    continue
 
                 if (peri_x_right < min_peri) and \
                         (peri_x_right <= peri_x_left) and \
@@ -205,6 +245,7 @@ class Node:
                     min_peri = peri_x_right
                     s1 = s1_x_right
                     s2 = s2_x_right
+                    continue
 
                 if (peri_y_bottom < min_peri) and \
                         (peri_y_bottom <= peri_x_right) and \
@@ -213,6 +254,7 @@ class Node:
                     min_peri = peri_y_bottom
                     s1 = s1_y_bottom
                     s2 = s2_y_bottom
+                    continue
 
                 if (peri_y_top < min_peri) and \
                         (peri_y_top <= peri_x_right) and \
@@ -221,14 +263,14 @@ class Node:
                     min_peri = peri_y_top
                     s1 = s1_y_top
                     s2 = s2_y_top
+                    continue
 
-            new_node.predecessor = self.predecessor
             self.copy_node(s1)
             new_node.copy_node(s2)
         return new_node
 
     def handle_overflow(self):
-        new_node = self.split()
+        new_node = self.split_node()
         global root
         if root == self:
             root = Node()
@@ -242,14 +284,15 @@ class Node:
             root.top = max(self.top, new_node.top)
         else:
             parent = self.predecessor
-            parent.successor.append(new_node)
+            parent.reset_position()
             for child in parent.successor:
-                parent.left = min(child.left, parent.left)
-                parent.right = max(child.right, parent.right)
-                parent.bottom = min(child.bottom, parent.bottom)
-                parent.top = max(child.top, parent.top)
+                parent.update_with_node(child)
+            parent.successor.append(new_node)
+            new_node.predecessor = parent
             if parent.is_overflow():
                 parent.handle_overflow()
+            else:
+                parent.update_with_node(new_node)
 
     def choose_subtree(self, point):
         subtree = Node()
@@ -267,12 +310,13 @@ class Node:
         return subtree
 
     def insert(self, point):
+        self.update_with_point(point)
         if self.is_leaf:
             self.successor.append(point)
             if self.is_overflow():
                 self.handle_overflow()
-            else:
-                self.update_with_point(point)
+#            else:
+#                self.update_with_point(point)
         else:
             subtree = self.choose_subtree(point)
             subtree.insert(point)
@@ -296,11 +340,11 @@ class Node:
                     (self.top <= rectangle.top):
                 count = len(self.successor)
             else:
-                for point in self.successor:
-                    if (point.x >= rectangle.left) and \
-                            (point.x <= rectangle.right) and \
-                            (point.y >= rectangle.bottom) and \
-                            (point.y <= rectangle.top):
+                for p in self.successor:
+                    if (p.x >= rectangle.left) and \
+                            (p.x <= rectangle.right) and \
+                            (p.y >= rectangle.bottom) and \
+                            (p.y <= rectangle.top):
                         count += 1
         else:
             for node in self.successor:
@@ -321,10 +365,24 @@ for line in data[1:]:
     line = line.split()
     line = map(eval, line)
     point = Point(line[1], line[2])
+    if line[0] == 27094:
+        pass
     root.insert(point)
+
 
 end = int(round(time.time() * 1000))
 print 'Build the tree: {0}ms'.format(end - start)
+
+def search(node):
+    count = 0
+    if node.is_leaf:
+        count = len(node.successor)
+    else:
+        for item in node.successor:
+            count += search(item)
+    return count
+
+#print 'count: {0}'.format(search(root))
 
 query_file = open('../data/test_query.txt')
 query = query_file.readlines()
