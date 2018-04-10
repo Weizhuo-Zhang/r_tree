@@ -2,7 +2,6 @@ import math
 import sys
 import time
 from Queue import PriorityQueue
-start = int(round(time.time() * 1000))
 
 class Point:
     def __init__(self, x, y):
@@ -17,7 +16,7 @@ class Rectangle:
         self.top = top
 
 class Node:
-    max_num = 9
+    max_num = 4
     min_num = int(math.ceil(0.4 * max_num))
     def __init__(self):
         self.is_leaf = False
@@ -321,41 +320,109 @@ class Node:
             subtree = self.choose_subtree(point)
             subtree.insert(point)
 
-    def intersect(self, rectangle):
-        minx = max(self.left, rectangle.left)
-        maxx = min(self.right, rectangle.right)
-        miny = max(self.bottom, rectangle.bottom)
-        maxy = min(self.top, self.top)
-        if (minx > maxx) or (miny > maxy):
-            return False
-        else:
-            return True
+#    def intersect(self, rectangle):
+#        minx = max(self.left, rectangle.left)
+#        maxx = min(self.right, rectangle.right)
+#        miny = max(self.bottom, rectangle.bottom)
+#        maxy = min(self.top, self.top)
+#        if (minx > maxx) or (miny > maxy):
+#            return False
+#        else:
+#            return True
+#
+#    def answer_query(self, rectangle):
+#        count = 0
+#        if self.is_leaf:
+#            for p in self.successor:
+#                if (p.x >= rectangle.left) and \
+#                        (p.x <= rectangle.right) and \
+#                        (p.y >= rectangle.bottom) and \
+#                        (p.y <= rectangle.top):
+#                    count += 1
+#            if (self.left >= rectangle.left) and \
+#                    (self.right <= rectangle.right) and \
+#                    (self.bottom >= rectangle.bottom) and \
+#                    (self.top <= rectangle.top):
+#                count = len(self.successor)
+#            else:
+#                for p in self.successor:
+#                    if (p.x >= rectangle.left) and \
+#                            (p.x <= rectangle.right) and \
+#                            (p.y >= rectangle.bottom) and \
+#                            (p.y <= rectangle.top):
+#                        count += 1
+#        else:
+#            for node in self.successor:
+#                if node.intersect(rectangle):
+#                    count += node.answer_query(rectangle)
+#        return count
 
-    def answer_query(self, rectangle):
-        count = 0
-        if self.is_leaf:
-            if (self.left >= rectangle.left) and \
-                    (self.right <= rectangle.right) and \
-                    (self.bottom >= rectangle.bottom) and \
-                    (self.top <= rectangle.top):
-                count = len(self.successor)
-            else:
-                for p in self.successor:
-                    if (p.x >= rectangle.left) and \
-                            (p.x <= rectangle.right) and \
-                            (p.y >= rectangle.bottom) and \
-                            (p.y <= rectangle.top):
-                        count += 1
-        else:
-            for node in self.successor:
-                if node.intersect(rectangle):
-                    count += node.answer_query(rectangle)
-        return count
+def crossLine(left, right, y, bottom, top, x):
+    return (bottom <= y) and (top >= y) and (left <= x) and (right >= x)
+
+def include_rec(node, rectangle):
+    if node.left <= rectangle.left and node.right >=rectangle.right and \
+        node.bottom <= rectangle.bottom and node.top >= rectangle.top:
+        return True
+    else:
+        return False
+
+
+def intersect(node, rectangle):
+    if (math.fabs((node.left + node.right)-(rectangle.left + rectangle.right)) \
+            < (rectangle.right + node.right - rectangle.left - node.left)) \
+            and (math.fabs((node.top + node.bottom) - (rectangle.top + \
+            rectangle.bottom)) < (rectangle.top + node.top - rectangle.bottom \
+            - node.bottom)):
+        return True
+    return False
+#    return crossLine(node.left, node.right, node.bottom, rectangle.bottom, rectangle.top, rectangle.left) \
+#       or crossLine(node.left, node.right, node.bottom, rectangle.bottom, rectangle.top, rectangle.right) \
+#         or crossLine(node.left, node.right, node.top, rectangle.bottom, rectangle.top, rectangle.left) \
+#           or crossLine(node.left, node.right, node.top, rectangle.bottom, rectangle.top, rectangle.right) \
+#             or crossLine(rectangle.left, rectangle.right, rectangle.bottom, node.bottom, node.top, node.left) \
+#               or crossLine(rectangle.left, rectangle.right, rectangle.bottom, node.bottom, node.top, node.right) \
+#                 or crossLine(rectangle.left, rectangle.right, rectangle.top, node.bottom, node.top, node.left) \
+#                   or crossLine(rectangle.left, rectangle.right, rectangle.top, node.bottom, node.top, node.right)
+
+
+def answer_query(node, rectangle):
+    count = 0
+    if node.is_leaf:
+        for p in node.successor:
+             if (p.x >= rectangle.left) and \
+                     (p.x <= rectangle.right) and \
+                     (p.y >= rectangle.bottom) and \
+                     (p.y <= rectangle.top):
+                 count += 1
+    else:
+        for child in node.successor:
+            if intersect(child, rectangle):
+                count += answer_query(child, rectangle)
+    return count
+
 
 data_file = open('../data/dataset.txt')
 data = data_file.readlines()
 data_file.close()
 
+query_file = open('../data/test_query.txt')
+query = query_file.readlines()
+query_file.close()
+
+
+ss_start = int(round(time.time() * 1e6))
+
+count_time = 0
+count_test = 0
+for line in data:
+    count_test += 1
+
+
+ss_end = int(round(time.time() * 1e6))
+print 'Sequential-scan benchmark: {0}us'.format(ss_end - ss_start)
+
+build_start = int(round(time.time()))
 root = Node()
 root.is_leaf = True
 #i = 0
@@ -368,10 +435,19 @@ for line in data[1:]:
     if line[0] == 27094:
         pass
     root.insert(point)
+build_end = int(round(time.time()))
+print 'build: {0}s'.format(build_end - build_start)
 
+#start = int(time.time())
+#root = Node()
+#root.is_leaf = True
+##i = 0
+#for line in data[1:]:
+#    #    i += 1
+#    #    print i
+#    line = line.split()
+#    line = map(eval, line)
 
-end = int(round(time.time() * 1000))
-print 'Build the tree: {0}ms'.format(end - start)
 
 def search(node):
     count = 0
@@ -384,24 +460,22 @@ def search(node):
 
 #print 'count: {0}'.format(search(root))
 
-query_file = open('../data/test_query.txt')
-query = query_file.readlines()
-query_file.close()
-
 result = ''
 
-start = int(round(time.time() * 1000))
+q_time = 0.0
 for line in query:
     line = line.split()
     line = map(eval, line)
     rectangle = Rectangle(line[0], line[1], line[2], line[3])
-    result += '{0}\n'.format(root.answer_query(rectangle))
+    q_start = int(round(time.time() * 1e6))
+    result += '{0}\n'.format(answer_query(root, rectangle))
+    q_end = int(round(time.time() * 1e6))
+    q_time += q_end - q_start
 
-end = int(round(time.time() * 1000))
-print 'Answer the query total: {0}ms'.format(end - start)
-print 'Answer the query average: {0}ms'.format((end - start) * 1.0 / len(query))
+print 'Answer the query total: {0}us'.format(q_time)
+print 'Answer the query average: {0}us'.format((q_time) * 1.0 / len(query))
+#print 'test time: {0}us'.format(test_time)
 
-print result
 result_file = open('result.txt', 'w')
 result_file.write(result)
 result_file.close()
