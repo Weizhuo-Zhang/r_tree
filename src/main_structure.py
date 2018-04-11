@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import math
 import sys
 import time
@@ -369,13 +370,18 @@ def include_rec(node, rectangle):
 
 
 def intersect(node, rectangle):
-    if (math.fabs((node.left + node.right)-(rectangle.left + rectangle.right)) \
-            < (rectangle.right + node.right - rectangle.left - node.left)) \
-            and (math.fabs((node.top + node.bottom) - (rectangle.top + \
-            rectangle.bottom)) < (rectangle.top + node.top - rectangle.bottom \
-            - node.bottom)):
-        return True
-    return False
+    if rectangle.left > node.right or node.left > rectangle.right or \
+            rectangle.bottom > node.top or node.bottom > rectangle.top:
+        return False
+    return True
+#    if (math.fabs((node.left + node.right)-(rectangle.left + rectangle.right)) \
+#            < (rectangle.right + node.right - rectangle.left - node.left)) \
+#            and (math.fabs((node.top + node.bottom) - (rectangle.top + \
+#            rectangle.bottom)) < (rectangle.top + node.top - rectangle.bottom \
+#            - node.bottom)):
+#        return True
+#    return False
+
 #    return crossLine(node.left, node.right, node.bottom, rectangle.bottom, rectangle.top, rectangle.left) \
 #       or crossLine(node.left, node.right, node.bottom, rectangle.bottom, rectangle.top, rectangle.right) \
 #         or crossLine(node.left, node.right, node.top, rectangle.bottom, rectangle.top, rectangle.left) \
@@ -403,7 +409,7 @@ def answer_query(node, rectangle):
 
 
 data_file = open('../data/dataset.txt')
-data = data_file.readlines()
+data_lines = data_file.readlines()
 data_file.close()
 
 query_file = open('../data/test_query.txt')
@@ -413,27 +419,41 @@ query_file.close()
 
 ss_start = int(round(time.time() * 1e6))
 
-count_time = 0
-count_test = 0
-for line in data:
-    count_test += 1
+data = []
+for line in data_lines[1:]:
+    line = line.split()
+    line = map(eval, line)
+    if len(line) == 0:
+        continue
+    point = Point(line[1], line[2])
+    data.append(point)
 
+test_result = ''
+for line in query:
+    line = line.split()
+    line = map(eval, line)
+    count_num = 0
+    for point in data:
+        if (point.x >= line[0]) and \
+                (point.x <= line[1]) and \
+                (point.y >= line[2]) and \
+                (point.y <= line[3]):
+            count_num += 1
+    test_result += '{0} '.format(count_num)
 
 ss_end = int(round(time.time() * 1e6))
-print 'Sequential-scan benchmark: {0}us'.format(ss_end - ss_start)
+print 'Sequential-scan benchmark: {0}us'.format((ss_end - ss_start)/len(query))
 
 build_start = int(round(time.time()))
 root = Node()
 root.is_leaf = True
-#i = 0
-for line in data[1:]:
-#    i += 1
-#    print i
-    line = line.split()
-    line = map(eval, line)
-    point = Point(line[1], line[2])
-    if line[0] == 27094:
-        pass
+#for line in data[1:]:
+#    line = line.split()
+#    line = map(eval, line)
+#    if len(line) == 0:
+#        continue
+#point = Point(line[1], line[2])
+for point in data:
     root.insert(point)
 build_end = int(round(time.time()))
 print 'build: {0}s'.format(build_end - build_start)
@@ -463,9 +483,13 @@ def search(node):
 result = ''
 
 q_time = 0.0
+line_count = 0
 for line in query:
     line = line.split()
     line = map(eval, line)
+    if len(line) == 0:
+        continue
+    line_count += 1
     rectangle = Rectangle(line[0], line[1], line[2], line[3])
     q_start = int(round(time.time() * 1e6))
     result += '{0}\n'.format(answer_query(root, rectangle))
@@ -473,7 +497,7 @@ for line in query:
     q_time += q_end - q_start
 
 print 'Answer the query total: {0}us'.format(q_time)
-print 'Answer the query average: {0}us'.format((q_time) * 1.0 / len(query))
+print 'Answer the query average: {0}us'.format((q_time) * 1.0 / line_count)
 #print 'test time: {0}us'.format(test_time)
 
 result_file = open('result.txt', 'w')
